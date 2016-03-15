@@ -13,15 +13,13 @@ class Bot:
             scores[move] = 0
         for move in legal_moves:
             microboard, index = pos.get_microboard(move[0], move[1])
-            legal_microboard = [m for m in legal_moves if m in microboard]
+            legal_microboard = [m for m in legal_moves if m in flatten(microboard)]
             # Block opponent
             if self.is_winner(move, pos, self.oppid):
                 if not any(self.is_winner(m, pos, self.oppid) for m in legal_microboard if m != move):
-                    sys.stderr.write('\n')
-                    scores[move] += 5
+                    scores[move] += 3
             # Win microboard
             if self.is_winner(move, pos, self.myid):
-                sys.stderr.write('\n')
                 scores[move] += 10
             # Win Game
             if self.is_macro_winner(move, pos, self.myid):
@@ -32,6 +30,12 @@ class Bot:
             # Edge
             if self.is_edge(index):
                 scores[move] -= 0.5
+            # Setup potential win
+            opts = list(self.row_col_diag(index, microboard))
+            opts = [[pos.board[9*y+x] for x, y in opt] for opt in opts]
+            for opt in opts:
+                if self.myid in opt and not self.oppid in opt:
+                    scores[move] += 1.1
 
             next_legal_moves = self.next_legal(index, pos, move)
             next_pos = copy.deepcopy(pos)
@@ -40,19 +44,17 @@ class Bot:
             for next_move in next_legal_moves:
                 # Lose next microboard
                 if self.is_winner(next_move, next_pos, self.oppid):
-                    sys.stderr.write('\n')
                     scores[move] -= 10
                 # Allow opp to block me
                 if self.is_winner(next_move, next_pos, self.myid) and not can_block:
-                    sys.stderr.write('\n')
                     can_block = True
-                    scores[move] -= 1
+                    scores[move] -= 2
                 # Lose Game
                 if self.is_macro_winner(next_move, next_pos, self.oppid):
                     scores[move] -= 10000
                 # Allow opp to block my winning move
                 if self.is_macro_winner(next_move, next_pos, self.myid):
-                    scores[move] -= 11
+                    scores[move] -= 12
 
         sys.stderr.write('scores:\n')
         for score in scores.items():
@@ -73,11 +75,11 @@ class Bot:
     def is_macro_winner(self, move, pos, id):
         if self.is_winner(move, pos, id):
             index = (move[0]/3, move[1]/3)
-            macroboard = [pos.macroboard[0:3], pos.macroboard[3:6], pos.macroboard[6:9]]
-            #sys.stderr.write('MACROBOARD: {}\n'.format(macroboard))
+            macroboard = zip(*[pos.macroboard[0:3], pos.macroboard[3:6], pos.macroboard[6:9]])
+            # sys.stderr.write('MACROBOARD: {}\n'.format(macroboard))
             opts = list(self.row_col_diag(index, macroboard))
-            sys.stderr.write('{}\n'.format(opts))
-            sys.stderr.write('\n')
+            # sys.stderr.write('{}\n'.format(opts))
+            # sys.stderr.write('\n')
             for opt in opts:
                 if all(v == id for v in opt):
                     return True
@@ -121,3 +123,6 @@ class Bot:
         legal_moves = [m for m in moves if pos.board[9*m[1] + m[0]] == 0 and pos.macroboard[3*(m[1]//3)+m[0]//3] < 1]
         legal_moves = [m for m in legal_moves if m != move]
         return legal_moves
+
+def flatten(l):
+    return [item for sublist in l for item in sublist]
