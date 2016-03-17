@@ -23,11 +23,11 @@ class Position:
 
     def make_move(self, x, y, pid):
         mbx, mby = x//3, y//3
+        self.board[9*y+x] = pid
+        if self.is_cats_game(x, y):
+            self.macroboard[3*mby+mbx] = 3
         if self.is_winner(x, y, pid):
             self.macroboard[3*mby+mbx] = pid
-        if self.is_cats_game(x, y, pid):
-            self.macroboard[3*mby+mbx] = 3
-        self.board[9*y+x] = pid
 
     def get_board(self):
         return ''.join(self.board, ',')
@@ -49,12 +49,11 @@ class Position:
             microboard.append([(xx, yy) for yy in ys])
         return microboard, (x_index, y_index)
 
-    def is_cats_game(self, x, y, pid):
-        if not self.is_winner(x, y, pid):
-            microboard, index = self.get_microboard(x, y)
-            values = [self.board[9*y+x] for x, y in flatten(microboard)]
-            if all(value > 0 for value in values):
-                return True
+    def is_cats_game(self, x, y):
+        microboard, index = self.get_microboard(x, y)
+        values = [self.board[9*y+x] for x, y in flatten(microboard)]
+        if all(value > 0 for value in values):
+            return True
         return False
 
     def is_winner(self, x, y,  pid):
@@ -62,7 +61,7 @@ class Position:
         opts = list(self.row_col_diag(index, microboard))
         opts = [[self.board[9*y+x] for x, y in opt] for opt in opts]
         for opt in opts:
-            if all(v == id for v in opt):
+            if all(v == pid for v in opt):
                 return True
         return False
 

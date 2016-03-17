@@ -39,7 +39,7 @@ class Bot:
 
             next_pos = copy.deepcopy(pos)
             next_pos.make_move(move[0], move[1], self.myid)
-            next_legal_moves = self.next_legal(index, next_pos, move)
+            next_legal_moves = self.next_legal(index, next_pos)
             can_block = False
             for next_move in next_legal_moves:
                 # Lose next microboard
@@ -65,7 +65,7 @@ class Bot:
         # Find the best option when multiple good moves are equal
         if len(best_scores) > 1:
             best_scores = self.tiebreaker(best_scores, pos)
-            sys.stderr.write('Tiebreaker: {}'.format(best_scores))
+            sys.stderr.write('Tiebreaker: {}\n'.format(best_scores))
 
         best_move = max(best_scores.items(), key=operator.itemgetter(1))[0]
         return best_move
@@ -138,14 +138,17 @@ class Bot:
         microboard, _ = pos.get_microboard(index[0]*3, index[1]*3)
         return microboard
 
-    def next_legal(self, index, pos, move):
+    def next_legal(self, index, pos):
+        # Won board
         if pos.macroboard[3*index[1]+index[0]] > 0:
+            moves = [(x, y) for x in range(9) for y in range(9)]
+        # Cats game
+        elif pos.is_cats_game(index[0], index[1]):
             moves = [(x, y) for x in range(9) for y in range(9)]
         else:
             microboard = self.next_microboard(index, pos)
             moves = flatten(microboard)
         legal_moves = [m for m in moves if pos.board[9*m[1] + m[0]] == 0 and pos.macroboard[3*(m[1]//3)+m[0]//3] < 1]
-        legal_moves = [m for m in legal_moves if m != move]
         return legal_moves
 
 
